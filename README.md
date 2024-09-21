@@ -14,5 +14,3 @@ This is a simple Flask web application that calculates the lot size based on the
 ### Running with Docker
 - Build a Docker image and run the container. The app will be available on a specified port (e.g., 5000).
 
-## License
-This project is licensed under the MIT License.
