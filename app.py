@@ -5,6 +5,8 @@ app = Flask(__name__)
 @app.route('/', methods=['GET', 'POST'])
 def calculator():
     lot_size = None
+    point_value = 5  # 1 lot size = $5 per point
+    
     if request.method == 'POST':
         try:
             # Retrieve the form data
@@ -12,9 +14,12 @@ def calculator():
             risk_percentage = float(request.form['risk_percentage'])
             stop_loss_points = float(request.form['stop_loss_points'])
 
-            # Calculate the lot size
+            # Calculate the risk amount
             risk_amount = capital * (risk_percentage / 100)
-            lot_size = risk_amount / stop_loss_points
+
+            # Calculate the correct lot size considering 1 lot = $5 per point
+            lot_size = risk_amount / (stop_loss_points * point_value)
+
         except (ValueError, ZeroDivisionError):
             lot_size = "Invalid input. Please check your values."
 
