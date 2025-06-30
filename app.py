@@ -27,9 +27,12 @@ def calculate_hedge_lots(capital, hedge_count, zone):
         lots = [round(base_lot * (r**i), 2) for i in range(hedge_count)]
         losses = [lot * zone * POINT_VALUE for lot in lots]
         total_loss = sum(losses)
-        last_tp = lots[-1] * TAKE_PROFIT_POINTS * POINT_VALUE
 
-        if total_loss <= max_total_loss and last_tp >= sum(losses[:-1]):
+        # Adjust TP requirement: only compensate prior losses, no profit margin
+        last_tp = lots[-1] * TAKE_PROFIT_POINTS * POINT_VALUE
+        required_recovery = sum(losses[:-1])
+
+        if total_loss <= max_total_loss and last_tp >= required_recovery:
             if total_loss > best_total_loss:
                 best_result = lots
                 best_total_loss = total_loss
@@ -38,10 +41,18 @@ def calculate_hedge_lots(capital, hedge_count, zone):
         return [], 0, max_total_loss
 
     results = []
+    accumulated_loss = 0
     for i, lot in enumerate(best_result):
         dollar_loss = lot * zone * POINT_VALUE
         percent_loss = (dollar_loss / capital) * 100
-        tp_profit = lot * TAKE_PROFIT_POINTS * POINT_VALUE
+
+        if i == 0:
+            tp_profit = lot * TAKE_PROFIT_POINTS * POINT_VALUE  # First hedge: can make profit
+        else:
+            tp_profit = accumulated_loss  # All others: just recover what was lost
+
+        accumulated_loss += dollar_loss
+
         results.append({
             'hedge': i + 1,
             'lot_size': round(lot, 2),
