@@ -1,0 +1,51 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hedge Load Calculator</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Hedge Load Calculator</h1>
+        <form method="POST">
+            <label>Capital ($):</label>
+            <input type="number" name="capital" step="any" required value="{{ capital }}"><br>
+
+            <label>Number of Hedges:</label>
+            <input type="number" name="hedge_count" required value="{{ hedge_count }}"><br>
+
+            <label>Zone Size (points):</label>
+            <input type="number" name="zone" required value="{{ zone }}"><br>
+
+            <button type="submit">Calculate</button>
+        </form>
+
+        {% if results %}
+            <h2>Results</h2>
+            <p><strong>Total Max Loss Allowed:</strong> ${{ max_loss }}</p>
+            <p><strong>Total Calculated Loss:</strong> ${{ total_loss }}</p>
+
+            <table>
+                <tr>
+                    <th>Hedge #</th>
+                    <th>Lot Size</th>
+                    <th>Loss ($)</th>
+                    <th>Loss (%)</th>
+                    <th>Profit if TP Hit ($)</th>
+                </tr>
+                {% for row in results %}
+                <tr>
+                    <td>{{ row.hedge }}</td>
+                    <td>{{ row.lot_size }}</td>
+                    <td>{{ row.loss_dollars }}</td>
+                    <td>{{ row.loss_percent }}</td>
+                    <td>{{ row.profit_if_tp }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% endif %}
+    </div>
+</body>
+</html>
