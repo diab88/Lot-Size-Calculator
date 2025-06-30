@@ -11,24 +11,17 @@ MAX_RISK_PERCENT = 0.09
 
 def calculate_hedge_lots(capital, hedge_count, zone):
     max_total_loss = capital * MAX_RISK_PERCENT
-    
-    # Try common multipliers
+
     best_result = []
-    best_total_loss = None
-    multipliers = [1.5, 1.8, 2.0, 2.2]
+    best_total_loss = 0
+    multipliers = [1.4, 1.5, 1.6, 1.7, 1.8, 2.0, 2.2, 2.5]
 
     for multiplier in multipliers:
-        # Calculate total of the geometric series: S = a * (r^n - 1) / (r - 1)
         r = multiplier
         try:
             geometric_sum = (r**hedge_count - 1) / (r - 1)
-        except ZeroDivisionError:
-            continue
-
-        # Solve for base lot: base_lot = (max_total_loss) / (zone * $5 * geometric_sum)
-        try:
             base_lot = max_total_loss / (zone * POINT_VALUE * geometric_sum)
-        except ZeroDivisionError:
+        except (ZeroDivisionError, OverflowError):
             continue
 
         lots = [round(base_lot * (r**i), 2) for i in range(hedge_count)]
@@ -37,11 +30,10 @@ def calculate_hedge_lots(capital, hedge_count, zone):
         last_tp = lots[-1] * TAKE_PROFIT_POINTS * POINT_VALUE
 
         if total_loss <= max_total_loss and last_tp >= sum(losses[:-1]):
-            best_result = lots
-            best_total_loss = total_loss
-            break
+            if total_loss > best_total_loss:
+                best_result = lots
+                best_total_loss = total_loss
 
-    # Fallback if no valid solution
     if not best_result:
         return [], 0, max_total_loss
 
