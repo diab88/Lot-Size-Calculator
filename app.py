@@ -12,30 +12,32 @@ MAX_RISK_PERCENT = 0.09
 def calculate_hedge_lots(capital, hedge_count, zone):
     max_total_loss = capital * MAX_RISK_PERCENT
 
+    # Strategy:
+    # - First hedge can make profit (freely chosen)
+    # - Each following hedge must only recover previous loss, no extra profit
+
+    # Start by guessing first hedge lot size
+    base_lot = 0.01
     best_result = []
     best_total_loss = 0
-    multipliers = [1.4, 1.5, 1.6, 1.7, 1.8, 2.0, 2.2, 2.5]
 
-    for multiplier in multipliers:
-        r = multiplier
-        try:
-            geometric_sum = (r**hedge_count - 1) / (r - 1)
-            base_lot = max_total_loss / (zone * POINT_VALUE * geometric_sum)
-        except (ZeroDivisionError, OverflowError):
-            continue
+    while base_lot < 100:
+        lots = [base_lot]
+        losses = [base_lot * zone * POINT_VALUE]
 
-        lots = [round(base_lot * (r**i), 2) for i in range(hedge_count)]
-        losses = [lot * zone * POINT_VALUE for lot in lots]
+        for i in range(1, hedge_count):
+            accumulated_loss = sum(losses)
+            lot = accumulated_loss / (TAKE_PROFIT_POINTS * POINT_VALUE)
+            losses.append(lot * zone * POINT_VALUE)
+            lots.append(lot)
+
         total_loss = sum(losses)
+        if total_loss > max_total_loss:
+            break  # Exceeded allowed risk
 
-        # Adjust TP requirement: only compensate prior losses, no profit margin
-        last_tp = lots[-1] * TAKE_PROFIT_POINTS * POINT_VALUE
-        required_recovery = sum(losses[:-1])
-
-        if total_loss <= max_total_loss and last_tp >= required_recovery:
-            if total_loss > best_total_loss:
-                best_result = lots
-                best_total_loss = total_loss
+        best_result = lots
+        best_total_loss = total_loss
+        base_lot += 0.01
 
     if not best_result:
         return [], 0, max_total_loss
@@ -47,9 +49,9 @@ def calculate_hedge_lots(capital, hedge_count, zone):
         percent_loss = (dollar_loss / capital) * 100
 
         if i == 0:
-            tp_profit = lot * TAKE_PROFIT_POINTS * POINT_VALUE  # First hedge: can make profit
+            tp_profit = lot * TAKE_PROFIT_POINTS * POINT_VALUE
         else:
-            tp_profit = accumulated_loss  # All others: just recover what was lost
+            tp_profit = accumulated_loss  # strictly compensating prior loss only
 
         accumulated_loss += dollar_loss
 
