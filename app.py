@@ -1,5 +1,6 @@
-# hedge_load_calculator/app.py
+# app.py
 from flask import Flask, render_template, request
+import os
 
 app = Flask(__name__)
 
@@ -10,7 +11,7 @@ MAX_RISK_PERCENT = 0.09
 
 def calculate_hedge_lots(capital, hedge_count, zone):
     max_total_loss = capital * MAX_RISK_PERCENT
-    
+
     lots = []
     total_loss = 0
 
@@ -67,4 +68,5 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
