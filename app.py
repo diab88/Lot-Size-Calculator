@@ -11,36 +11,40 @@ MAX_RISK_PERCENT = 0.09
 
 def calculate_hedge_lots(capital, hedge_count, zone):
     max_total_loss = capital * MAX_RISK_PERCENT
-
-    # We assume geometric progression: lot_i = base_lot * multiplier^i
-    # Goal: Find base_lot such that:
-    # sum(loss_i) <= max_total_loss AND last TP >= sum(losses before last)
-
-    # Try common multipliers: 1.5x, 2x, 2.5x
+    
+    # Try common multipliers
     best_result = []
     best_total_loss = None
-    for multiplier in [1.5, 2, 2.2]:
-        base_lot = 0.01
-        while base_lot < 100:
-            lots = [round(base_lot * (multiplier ** i), 2) for i in range(hedge_count)]
-            losses = [lot * zone * POINT_VALUE for lot in lots]
-            total_loss = sum(losses)
-            
-            if total_loss > max_total_loss:
-                break  # stop testing this base_lot
+    multipliers = [1.5, 1.8, 2.0, 2.2]
 
-            last_profit = lots[-1] * TAKE_PROFIT_POINTS * POINT_VALUE
-            if last_profit >= sum(losses[:-1]):
-                best_result = lots
-                best_total_loss = total_loss
-                break
+    for multiplier in multipliers:
+        # Calculate total of the geometric series: S = a * (r^n - 1) / (r - 1)
+        r = multiplier
+        try:
+            geometric_sum = (r**hedge_count - 1) / (r - 1)
+        except ZeroDivisionError:
+            continue
 
-            base_lot += 0.01
+        # Solve for base lot: base_lot = (max_total_loss) / (zone * $5 * geometric_sum)
+        try:
+            base_lot = max_total_loss / (zone * POINT_VALUE * geometric_sum)
+        except ZeroDivisionError:
+            continue
 
-        if best_result:
-            break  # stop trying other multipliers
+        lots = [round(base_lot * (r**i), 2) for i in range(hedge_count)]
+        losses = [lot * zone * POINT_VALUE for lot in lots]
+        total_loss = sum(losses)
+        last_tp = lots[-1] * TAKE_PROFIT_POINTS * POINT_VALUE
 
-    # Format results
+        if total_loss <= max_total_loss and last_tp >= sum(losses[:-1]):
+            best_result = lots
+            best_total_loss = total_loss
+            break
+
+    # Fallback if no valid solution
+    if not best_result:
+        return [], 0, max_total_loss
+
     results = []
     for i, lot in enumerate(best_result):
         dollar_loss = lot * zone * POINT_VALUE
