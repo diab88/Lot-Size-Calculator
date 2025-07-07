@@ -1,51 +1,57 @@
-<!-- templates/index.html -->
-<!DOCTYPE html>
+""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Hedge Load Calculator</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
         <h1>Hedge Load Calculator</h1>
-        <form method="POST">
-            <label>Capital ($):</label>
-            <input type="number" name="capital" step="any" required value="{{ capital }}"><br>
+        <form method="post">
+            <label for="capital">Capital ($):</label>
+            <input type="text" name="capital" id="capital" value="{{ capital or '' }}" required>
 
-            <label>Number of Hedges:</label>
-            <input type="number" name="hedge_count" required value="{{ hedge_count }}"><br>
+            <label for="hedges">Number of Hedges:</label>
+            <input type="number" name="hedges" id="hedges" min="1" value="{{ hedges or '' }}" required>
 
-            <label>Zone Size (points):</label>
-            <input type="number" name="zone" required value="{{ zone }}"><br>
+            <label for="zone_size">Zone Size (points):</label>
+            <input type="number" name="zone_size" id="zone_size" min="1" value="{{ zone_size or '' }}" required>
+
+            <label for="risk_percent">Max Risk (% of Capital):</label>
+            <input type="number" name="risk_percent" id="risk_percent" step="0.01" min="0.01" value="{{ risk_percent or '9.0' }}" required>
 
             <button type="submit">Calculate</button>
         </form>
 
         {% if results %}
             <h2>Results</h2>
-            <p><strong>Total Max Loss Allowed:</strong> ${{ max_loss }}</p>
-            <p><strong>Total Calculated Loss:</strong> ${{ total_loss }}</p>
+            <p><strong>Total Max Loss Allowed:</strong> ${{ "{:.1f}".format(max_loss) }}</p>
+            <p><strong>Total Calculated Loss:</strong> ${{ "{:.1f}".format(total_loss) }}</p>
 
             <table>
-                <tr>
-                    <th>Hedge #</th>
-                    <th>Lot Size</th>
-                    <th>Loss ($)</th>
-                    <th>Loss (%)</th>
-                    <th>Profit if TP Hit ($)</th>
-                </tr>
-                {% for row in results %}
-                <tr>
-                    <td>{{ row.hedge }}</td>
-                    <td>{{ row.lot_size }}</td>
-                    <td>{{ row.loss_dollars }}</td>
-                    <td>{{ row.loss_percent }}</td>
-                    <td>{{ row.profit_if_tp }}</td>
-                </tr>
-                {% endfor %}
+                <thead>
+                    <tr>
+                        <th>Hedge #</th>
+                        <th>Lot Size</th>
+                        <th>Loss ($)</th>
+                        <th>Loss (%)</th>
+                        <th>Profit if TP Hit ($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in results %}
+                        <tr>
+                            <td>{{ row.hedge }}</td>
+                            <td>{{ "{:.2f}".format(row.lot_size) }}</td>
+                            <td>{{ "{:.1f}".format(row.loss) }}</td>
+                            <td>{{ "{:.2f}".format(row.loss_pct) }}</td>
+                            <td>{{ "{:.1f}".format(row.profit_if_tp) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
             </table>
         {% endif %}
     </div>
 </body>
-</html>
+</html>""
