@@ -20,7 +20,7 @@ def index():
             risk_percent = float(str(request.form['risk_percent']).replace(',', '.'))
 
             # Constants
-            point_value = 1  # $5 per point
+            point_value = 10  # $10 per point
             tp_points = 100
             total_max_loss = capital * (risk_percent / 100)
 
