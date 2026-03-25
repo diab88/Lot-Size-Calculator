@@ -4,35 +4,36 @@
     <meta charset="UTF-8">
     <title>Hedge Load Calculator</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .container {
-            max-width: 700px;
-            margin-top: 40px;
-        }
-        input[type="number"], input[type="text"] {
-            text-align: left;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <div class="container">
         <h2 class="mb-4">Hedge Load Calculator</h2>
+
+        {% if error %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+        {% endif %}
+
         <form method="post">
             <div class="mb-3">
                 <label class="form-label">Capital ($):</label>
-                <input type="text" class="form-control" name="capital" value="{{ capital or '' }}" required>
+                <input type="number" step="any" min="0.01" class="form-control" name="capital"
+                       value="{{ capital or '' }}" required>
             </div>
             <div class="mb-3">
                 <label class="form-label">Number of Hedges:</label>
-                <input type="number" class="form-control" name="hedges" value="{{ hedges or '' }}" required>
+                <input type="number" step="1" min="1" class="form-control" name="hedges"
+                       value="{{ hedges or '' }}" required>
             </div>
             <div class="mb-3">
                 <label class="form-label">Zone Size (points):</label>
-                <input type="text" class="form-control" name="zone" value="{{ zone or '' }}" required>
+                <input type="number" step="any" min="0.01" class="form-control" name="zone"
+                       value="{{ zone or '' }}" required>
             </div>
             <div class="mb-3">
                 <label class="form-label">Max Risk (% of Capital):</label>
-                <input type="text" class="form-control" name="risk_percent" value="{{ risk_percent or '' }}" required>
+                <input type="number" step="any" min="0.01" max="100" class="form-control" name="risk_percent"
+                       value="{{ risk_percent or '' }}" required>
             </div>
             <button type="submit" class="btn btn-primary w-100">Calculate</button>
         </form>
@@ -51,6 +52,7 @@
                         <th>Loss ($)</th>
                         <th>Loss (%)</th>
                         <th>Profit if TP Hit ($)</th>
+                        <th>Prior Losses Recovered ($)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -61,6 +63,7 @@
                         <td>{{ r.loss_dollars }}</td>
                         <td>{{ r.loss_percent }}</td>
                         <td>{{ r.profit }}</td>
+                        <td>{{ r.recovery }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
