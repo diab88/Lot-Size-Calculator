@@ -1,0 +1,94 @@
+name: Build Parenting Reminder APK
+
+on:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+    paths:
+      - 'ParentingReminderApp/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Debug & Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('ParentingReminderApp/**/*.gradle*', 'ParentingReminderApp/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ParentingReminderApp/gradlew
+        continue-on-error: true
+
+      - name: Setup Gradle wrapper
+        working-directory: ParentingReminderApp
+        run: |
+          gradle wrapper --gradle-version 8.4 --distribution-type bin || true
+
+      - name: Build Debug APK
+        working-directory: ParentingReminderApp
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Build Release APK (signed with debug key)
+        working-directory: ParentingReminderApp
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DadsLittleHelper-debug
+          path: ParentingReminderApp/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DadsLittleHelper-release
+          path: ParentingReminderApp/app/build/outputs/apk/release/app-release*.apk
+          retention-days: 30
+
+      - name: Create Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Dad's Little Helper v1.0.${{ github.run_number }}"
+          body: |
+            ## Dad's Little Helper - Parenting Reminder App
+
+            A daily reminder app for fathers of 1.5-year-old children.
+
+            ### Features
+            - 20 daily reminders covering feeding, sleep, play, hygiene, health & development
+            - Push notifications at scheduled times (repeats every day)
+            - Mark tasks as done for the day
+            - Filter by category
+            - Tasks auto-reset each day
+
+            ### Install
+            Download `app-debug.apk` or `app-release.apk`, enable "Install from unknown sources" on your phone, and install.
+          files: |
+            ParentingReminderApp/app/build/outputs/apk/debug/app-debug.apk
+            ParentingReminderApp/app/build/outputs/apk/release/app-release*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
